@@ -1,0 +1,81 @@
+---
+- name: Configure a web host and manage the EcoDeploy Docker container
+  hosts: web
+  become: true
+  vars:
+    app_image: "{{ ecodeploy_image | default('node:22-alpine') }}"
+    app_name: ecodeploy-web
+    app_port: "{{ ecodeploy_port | default(3000) }}"
+  tasks:
+    - name: Install and start a web server on Ubuntu or Debian
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+      when: ansible_facts.os_family == 'Debian'
+    - name: Install and start a web server on RedHat family
+      ansible.builtin.package:
+        name: nginx
+        state: present
+      when: ansible_facts.os_family == 'RedHat'
+    - name: Enable nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+    - name: Install Docker Engine package on Ubuntu or Debian
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+      when: ansible_facts.os_family == 'Debian'
+    - name: Enable Docker Engine
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Pull application image
+      community.docker.docker_image:
+        name: "{{ app_image }}"
+        source: pull
+    - name: Run or update EcoDeploy container
+      community.docker.docker_container:
+        name: "{{ app_name }}"
+        image: "{{ app_image }}"
+        state: started
+        restart_policy: unless-stopped
+        published_ports:
+          - "{{ app_port }}:3000"
+        env:
+          PORT: "3000"
+        healthcheck:
+          test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+          interval: 30s
+          timeout: 3s
+          retries: 3
+    - name: Configure nginx reverse proxy for EcoDeploy
+      ansible.builtin.copy:
+        dest: /etc/nginx/sites-available/ecodeploy
+        mode: "0644"
+        content: |
+          server {
+            listen 80 default_server;
+            server_name _;
+            location / {
+              proxy_pass http://127.0.0.1:{{ app_port }};
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+          }
+      when: ansible_facts.os_family == 'Debian'
+      notify: Validate and reload nginx
+  handlers:
+    - name: Validate and reload nginx
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      notify: Reload nginx
+    - name: Reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded

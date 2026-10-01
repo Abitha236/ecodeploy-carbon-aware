@@ -1,0 +1,12 @@
+'use strict';
+const {test,before,after}=require('node:test');
+const assert=require('node:assert/strict');
+const {server,estimate}=require('../app/server');
+let base;
+before(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));base=`http://127.0.0.1:${server.address().port}`;});
+after(async()=>{await new Promise((r,j)=>server.close(e=>e?j(e):r()));});
+test('health endpoint reports a healthy service',async()=>{const r=await fetch(base+'/api/health');assert.equal(r.status,200);assert.equal((await r.json()).status,'ok');});
+test('estimate clamps input and returns an hourly recommendation',()=>{const e=estimate({region:'Europe',workload:30,runtime:2});assert.equal(e.forecast.length,24);assert.ok(e.recommended.intensity<=e.current.intensity);assert.ok(e.workload>=1);});
+test('estimate safely defaults unknown regions',()=>assert.equal(estimate({region:'Mars'}).region,'Europe'));
+test('estimate API responds with avoided emissions and forecast',async()=>{const r=await fetch(base+'/api/estimate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({region:'Europe',workload:30,runtime:2})});const x=await r.json();assert.equal(r.status,200);assert.equal(x.forecast.length,24);assert.ok('avoidedKg' in x);});
+test('invalid JSON receives a clear client error',async()=>{const r=await fetch(base+'/api/estimate',{method:'POST',headers:{'content-type':'application/json'},body:'{'});assert.equal(r.status,400);});
