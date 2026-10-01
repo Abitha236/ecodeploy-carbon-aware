@@ -1,1 +1,1 @@
-release-window=fast
+release-window=green-with-fast-fallback
