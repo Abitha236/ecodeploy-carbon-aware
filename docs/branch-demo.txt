@@ -1,1 +1,1 @@
-release-window=stable
+release-window=fast
