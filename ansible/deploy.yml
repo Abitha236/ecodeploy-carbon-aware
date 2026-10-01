@@ -3,10 +3,16 @@
   hosts: web
   become: true
   vars:
-    app_image: "{{ ecodeploy_image | default('node:22-alpine') }}"
+    app_image: "{{ ecodeploy_image }}"
     app_name: ecodeploy-web
     app_port: "{{ ecodeploy_port | default(3000) }}"
   tasks:
+    - name: Require the published EcoDeploy application image
+      ansible.builtin.assert:
+        that:
+          - ecodeploy_image is defined
+          - ecodeploy_image | length > 0
+        fail_msg: "Pass -e ecodeploy_image=registry.example/ecodeploy:tag after publishing the Docker image."
     - name: Install and start a web server on Ubuntu or Debian
       ansible.builtin.apt:
         name: nginx
@@ -68,6 +74,19 @@
               proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             }
           }
+      when: ansible_facts.os_family == 'Debian'
+      notify: Validate and reload nginx
+    - name: Disable the default nginx site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      when: ansible_facts.os_family == 'Debian'
+      notify: Validate and reload nginx
+    - name: Enable the EcoDeploy nginx site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/ecodeploy
+        dest: /etc/nginx/sites-enabled/ecodeploy
+        state: link
       when: ansible_facts.os_family == 'Debian'
       notify: Validate and reload nginx
   handlers:

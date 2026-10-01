@@ -23,7 +23,7 @@ Visit `http://localhost:3000`. Try the calculator, save a service plan, and crea
 
 | Path | Purpose |
 |---|---|
-| `app/server.js` | Dependency-free HTTP API, static server, carbon estimate, account registration, and plan store |
+| `app/server.js` | Dependency-free HTTP API, static server, carbon estimate, account registration/sign-in, and plan store |
 | `app/public/` | Responsive dashboard, chart, forms, and styles |
 | `tests/app.test.js` | Health, estimate bounds, recommendations, and invalid input tests |
 | `Dockerfile`, `compose.yaml` | Non-root Node app, health check, port 3000, persistent data volume |

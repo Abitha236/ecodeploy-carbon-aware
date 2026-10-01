@@ -1,0 +1,7 @@
+.git
+node_modules
+data/store.json
+screenshots
+docs
+ansible
+test-results

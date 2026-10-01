@@ -28,27 +28,33 @@ git config --list --show-origin
 
 ## 1. Local repository, add/commit/status/log, and branches
 
-Run from the project root (`outputs\ecodeploy-carbon-aware`). For a demonstration local repository, create it and inspect the first commit:
+Run from the project root (`outputs\ecodeploy-carbon-aware`). This deliverable already contains a local `main` repository, a sample lab identity, and a baseline commit, so first inspect the history that is present. To repeat this exercise from a source-only copy without `.git`, use the initialization lines below; replace the sample identity with your own display name/email before committing.
+
+```powershell
+git status
+git log --oneline --decorate
+git status
+```
+
+Source-only copy initialization (skip when `.git` already exists):
 
 ```powershell
 git init -b main
-git status
+git config user.name "YOUR NAME"
+git config user.email "YOUR EMAIL"
 git add .
-git status
 git commit -m "feat: build EcoDeploy carbon-aware deployment planner"
-git log --oneline --decorate
-git status
 ```
 
 Branch exercise. Start a feature branch, make one purposeful change, commit, and merge it to main:
 
 ```powershell
-git switch -c feature/dashboard-copy
+git switch -c feature/new-planner-note
 # Edit README or a UI label, then:
 git add README.md
 git commit -m "docs: clarify the carbon-aware planning workflow"
 git switch main
-git merge --no-ff feature/dashboard-copy -m "merge: dashboard copy"
+git merge --no-ff feature/new-planner-note -m "merge: planner note"
 git branch --all
 git log --oneline --graph --decorate --all
 ```
@@ -189,7 +195,7 @@ Five tests cover health response, clamped estimates, unknown-region defaults, ho
 
 ## 7. Ansible web server and automated Docker management
 
-Run from Ubuntu/WSL2 or a Linux control node with SSH access to an Ubuntu/Debian target that already has Docker Engine reachable. Ansible is not natively supported as a Windows control node. `ansible/deploy.yml` installs nginx and Docker, pulls `node:22-alpine`, starts/updates the container, and sets an nginx reverse proxy. For a production deployment, publish your built app image to a registry and pass that image name; the default generic Node image illustrates the container-management task but does not include this source code.
+Run from Ubuntu/WSL2 or a Linux control node with SSH access to an Ubuntu/Debian target. Ansible is not natively supported as a Windows control node. First publish the image you built from this repository to a container registry the server can access. `ansible/deploy.yml` installs nginx and Docker, pulls that EcoDeploy image, starts/updates the container, and enables nginx reverse proxy routing.
 
 ```bash
 sudo apt update
@@ -199,11 +205,12 @@ cp ansible/inventory.ini.example ansible/inventory.ini
 # Edit inventory.ini: set real Ubuntu host/IP and SSH user; don't commit real host inventory.
 ansible web -i ansible/inventory.ini -m ping
 ansible-playbook -i ansible/inventory.ini ansible/deploy.yml --syntax-check
-ansible-playbook -i ansible/inventory.ini ansible/deploy.yml --diff
+ansible-playbook -i ansible/inventory.ini ansible/deploy.yml --syntax-check
+ansible-playbook -i ansible/inventory.ini ansible/deploy.yml --diff -e ecodeploy_image=YOUR_REGISTRY/ecodeploy:1.0.0
 ansible web -i ansible/inventory.ini -b -m command -a 'docker ps'
 ```
 
-After the playbook, visit `http://YOUR_UBUNTU_SERVER_IP/` and inspect `docker ps`, `systemctl status nginx`, and the Ansible recap. The playbook changes a real target host. Use a disposable VM for this lab and update SSH/firewall rules to your requirements. To point nginx at the application image built from this repo, push it to a registry and run with `-e ecodeploy_image=YOUR_REGISTRY/ecodeploy:TAG`; configure authenticated registry access on the host first.
+After the playbook, visit `http://YOUR_UBUNTU_SERVER_IP/` and inspect `docker ps`, `systemctl status nginx`, and the Ansible recap. The playbook changes a real target host. Use a disposable VM for this lab and update SSH/firewall rules to your requirements. Configure authenticated registry access on the host first if the registry is private.
 
 ## 8. Screenshots and report evidence
 
