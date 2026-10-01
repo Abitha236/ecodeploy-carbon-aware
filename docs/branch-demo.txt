@@ -1,0 +1,1 @@
+release-window=stable
