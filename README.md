@@ -44,3 +44,5 @@ docker compose down
 ```
 
 The project and all tutorial files are ready locally. Creating a GitHub repo, pushing to it, configuring webhooks, and running the Docker/Ansible infrastructure need your GitHub sign-in and installed services. Follow [the lab guide](docs/LAB-GUIDE.md) in order. The screenshot folder has a capture checklist; this environment does not currently provide a terminal window or screen-capture-to-file path, so the guide shows exactly which real PowerShell/Ubuntu terminal captures to add when you run the labs.
+
+Branch demo: concise feature branches keep reviews focused.
