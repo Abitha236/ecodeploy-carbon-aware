@@ -39,7 +39,7 @@ Node.js app ── salted account hashes + deployment plans (data volume)
 | Branching | `feature/dashboard-copy` merged to `main`; separate `feature/grid-window` created a same-line conflict and was merged after resolution. |
 | Git status/log | Clean working tree after the merge; graph shows both branches and merge commits. |
 | Node syntax | `app/server.js` and browser `app.js` pass `node --check`. |
-| Automated tests | 7 passed, 0 failed: health, clamping, safe region fallback, estimate API, malformed JSON, salted registration/sign-in, and invalid credentials. |
+| Automated tests | 8 passed, 0 failed: health, clamping, safe region fallback, estimate API, malformed JSON, plan persistence, salted registration/sign-in, and invalid credentials. |
 | JUnit output | Node's built-in JUnit reporter emits XML accepted by Jenkins' JUnit publisher. |
 | Website | Served successfully in a browser; dashboard rendered live model output and the 24-hour chart. |
 
