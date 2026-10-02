@@ -6,7 +6,11 @@ pipeline {
     disableConcurrentBuilds()
     buildDiscarder(logRotator(numToKeepStr: '20'))
   }
-  environment { CI = 'true' }
+  environment {
+    CI = 'true'
+    PATH+NODE = "${env.NODE_HOME}"
+    PATH+DOCKER = "${env.DOCKER_HOME}"
+  }
   stages {
     stage('Checkout') {
       steps {
