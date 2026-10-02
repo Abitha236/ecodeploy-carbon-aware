@@ -6,11 +6,7 @@ pipeline {
     disableConcurrentBuilds()
     buildDiscarder(logRotator(numToKeepStr: '20'))
   }
-  environment {
-    CI = 'true'
-    PATH+NODE = "${env.NODE_HOME}"
-    PATH+DOCKER = "${env.DOCKER_HOME}"
-  }
+  environment { CI = 'true' }
   stages {
     stage('Checkout') {
       steps {
@@ -18,6 +14,22 @@ pipeline {
         script {
           if (isUnix()) sh 'git log -1 --oneline'
           else bat 'git log -1 --oneline'
+        }
+      }
+    }
+    stage('Configure build tools') {
+      steps {
+        script {
+          if (env.NODE_HOME) {
+            if (isUnix()) env.PATH = "${env.NODE_HOME}/bin:${env.PATH}"
+            else env.PATH = "${env.NODE_HOME};${env.PATH}"
+          }
+          if (env.DOCKER_HOME) {
+            if (isUnix()) env.PATH = "${env.DOCKER_HOME}:${env.PATH}"
+            else env.PATH = "${env.DOCKER_HOME};${env.PATH}"
+          }
+          if (isUnix()) sh 'node --version && docker --version'
+          else bat 'node --version && docker --version'
         }
       }
     }
