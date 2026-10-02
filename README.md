@@ -69,7 +69,7 @@ Compose publishes the container on `http://localhost:3001` by default so it can 
 
 The deployment statuses are a workflow demonstration; EcoDeploy does not provision cloud resources yet. Carbon profiles are illustrative seeded data, not live measurements or validated emissions. Estimated costs are informational; the demo collects no payment. Session cookies are in-memory and expire when the server restarts. Use this as a local/classroom project, not a public production service, without adding production identity/session management, rate limits, CSRF protections, HTTPS, and live grid data.
 
-The local Git repository already demonstrates feature branches and conflict resolution. See [the lab guide](docs/LAB-GUIDE.md) for GitHub, Jenkins, Docker, and Ansible integration steps. This repo has no published remote yet.
+The public GitHub repository is [Abitha236/ecodeploy-carbon-aware](https://github.com/Abitha236/ecodeploy-carbon-aware). The local history demonstrates feature branches and conflict resolution. See [the lab guide](docs/LAB-GUIDE.md) for GitHub, Jenkins, Docker, and Ansible integration steps.
 
 ## Automatic GitHub push
 
