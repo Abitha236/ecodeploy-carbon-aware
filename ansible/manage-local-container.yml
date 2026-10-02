@@ -1,0 +1,71 @@
+---
+- name: Build and manage EcoDeploy with Ansible and Docker Desktop
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    project_root: "{{ playbook_dir }}/.."
+    app_image: ecodeploy:local
+    app_container: ecodeploy-web
+    app_port: "{{ lookup('ansible.builtin.env', 'ECODEPLOY_PORT') | default('3001', true) }}"
+    admin_email: "{{ lookup('ansible.builtin.env', 'ADMIN_EMAIL') | default('admin@ecodeploy.local', true) }}"
+    admin_password: "{{ lookup('ansible.builtin.env', 'ADMIN_PASSWORD') }}"
+  tasks:
+    - name: Require an application admin password from the local .env
+      ansible.builtin.assert:
+        that:
+          - admin_password | length >= 12
+        fail_msg: "Export ADMIN_PASSWORD from the project .env before running this playbook."
+      no_log: true
+
+    - name: Build the EcoDeploy image
+      community.docker.docker_image:
+        name: "{{ app_image }}"
+        source: build
+        build:
+          path: "{{ project_root }}"
+
+    - name: Create persistent application data volume
+      community.docker.docker_volume:
+        name: ecodeploy-data
+        state: present
+
+    - name: Run or update the EcoDeploy container
+      community.docker.docker_container:
+        name: "{{ app_container }}"
+        image: "{{ app_image }}"
+        state: started
+        restart_policy: unless-stopped
+        published_ports:
+          - "{{ app_port }}:3000"
+        volumes:
+          - ecodeploy-data:/app/data
+        env:
+          PORT: "3000"
+          ADMIN_EMAIL: "{{ admin_email }}"
+          ADMIN_PASSWORD: "{{ admin_password }}"
+        healthcheck:
+          test:
+            - CMD
+            - node
+            - -e
+            - "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+          interval: 30s
+          timeout: 3s
+          retries: 3
+      no_log: true
+
+    - name: Inspect the deployed application container
+      community.docker.docker_container_info:
+        name: "{{ app_container }}"
+      register: ecodeploy_container
+
+    - name: Confirm the container is running
+      ansible.builtin.assert:
+        that:
+          - ecodeploy_container.container.State.Running
+        fail_msg: "EcoDeploy container did not reach the running state."
+
+    - name: Report the local application URL
+      ansible.builtin.debug:
+        msg: "EcoDeploy is available at http://localhost:{{ app_port }}"

@@ -180,9 +180,12 @@ Sizes vary with architecture, registry layers, and cached base tags; compare out
 docker compose up --build -d
 docker compose ps
 docker compose logs --tail 40
+curl -fsS http://localhost:3001/api/health
 docker compose down
 docker volume ls
 ```
+
+Compose serves the container on `http://localhost:3001` by default to avoid a conflict with the Node development server on port 3000. Set `ECODEPLOY_PORT` in `.env` to change the host port.
 
 ## 5. Jenkins Freestyle job, pipeline, and GitHub webhook
 
@@ -205,6 +208,20 @@ npm test
 Twelve tests cover health/storage, estimates, catalog search/category, customer registration and password hashing, deployment requests, history, role access, admin workflow transitions, service/customer management, and failed login. A non-zero test exit fails Jenkins. Pipeline JUnit publishing shows pass/fail and durations; archived TAP is the raw output. If tests fail, inspect the first assertion/stack trace, fix the code, rerun locally, commit, and confirm the new build is green.
 
 ## 7. Ansible web server and automated Docker management
+
+For a local Docker Desktop demonstration with no separate SSH server, use `ansible/manage-local-container.yml`. In Ubuntu/WSL, install the Docker Python client and collection, export the ignored project `.env` values, then run the localhost playbook:
+
+```bash
+sudo apt install -y python3-docker
+ansible-galaxy collection install -r ansible/requirements.yml
+set -a
+source .env
+set +a
+ansible-playbook -i localhost, ansible/manage-local-container.yml
+curl -fsS http://localhost:3001/api/health
+```
+
+The playbook builds `ecodeploy:local`, maintains the `ecodeploy-data` volume and `ecodeploy-web` container, applies the health check, and reports the local URL. Keep `.env` private; do not paste its admin password into chat. The remote-host playbook below remains available for a separate Ubuntu/Debian server.
 
 Run from Ubuntu/WSL2 or a Linux control node with SSH access to an Ubuntu/Debian target. Ansible is not natively supported as a Windows control node. First publish the image you built from this repository to a container registry the server can access. `ansible/deploy.yml` installs nginx and Docker, pulls that EcoDeploy image, starts/updates the container, and enables nginx reverse proxy routing.
 

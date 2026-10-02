@@ -59,11 +59,13 @@ npm test
 Copy-Item .env.example .env
 # Edit .env and replace the placeholder with a unique local password.
 docker compose up --build -d
-Invoke-RestMethod http://localhost:3000/api/health
+Invoke-RestMethod http://localhost:3001/api/health
 docker compose ps
 docker compose logs --tail 30 ecodeploy
 docker compose down
 ```
+
+Compose publishes the container on `http://localhost:3001` by default so it can run alongside the local Node server on port 3000. Set `ECODEPLOY_PORT` in `.env` to choose a different host port.
 
 The deployment statuses are a workflow demonstration; EcoDeploy does not provision cloud resources yet. Carbon profiles are illustrative seeded data, not live measurements or validated emissions. Estimated costs are informational; the demo collects no payment. Session cookies are in-memory and expire when the server restarts. Use this as a local/classroom project, not a public production service, without adding production identity/session management, rate limits, CSRF protections, HTTPS, and live grid data.
 

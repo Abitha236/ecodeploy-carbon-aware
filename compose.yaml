@@ -8,7 +8,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ecodeploy.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set a unique ADMIN_PASSWORD in .env before starting Compose}
     ports:
-      - "3000:3000"
+      - "${ECODEPLOY_PORT:-3001}:3000"
     volumes:
       - ecodeploy-data:/app/data
     restart: unless-stopped
@@ -19,3 +19,4 @@ services:
       retries: 3
 volumes:
   ecodeploy-data:
+    name: ecodeploy-data
