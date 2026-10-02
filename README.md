@@ -6,18 +6,20 @@ Customers search a categorized service catalog, configure region/compute/runtime
 
 ## Run locally
 
-Requires Node.js 24+ and Git. The runtime uses Node's built-in SQLite module and has no third-party npm dependencies.
+Requires Node.js 24+ and Git. The runtime uses Node's built-in SQLite module and has no third-party npm dependencies. The admin password is required in the environment, re-applied to the configured admin account at startup, and never shipped as a default credential.
 
 ```powershell
 node --version
 npm --version
 npm test
+$env:ADMIN_EMAIL = 'admin@ecodeploy.local'
+$env:ADMIN_PASSWORD = Read-Host 'Choose a unique admin password (12+ characters)'
 npm start
 ```
 
 Open `http://localhost:3000`.
 
-**Demo administrator:** `admin@ecodeploy.local` / `ecodeploy-admin-change-me`. This is a classroom default; set `ADMIN_EMAIL` and a strong `ADMIN_PASSWORD` before sharing or deploying the app. New registrations always get the customer role; the public form cannot create admins.
+Use the configured `ADMIN_EMAIL` and `ADMIN_PASSWORD` to sign in to the administrator dashboard. New registrations always get the customer role; the public form cannot create admins.
 
 ## Workflows
 
@@ -46,7 +48,7 @@ Open `http://localhost:3000`.
 | `tests/app.test.js` | 12 tests covering catalog, accounts, roles, deployment requests, admin transitions, and access control |
 | `Dockerfile`, `compose.yaml` | Non-root Node 24 image, health check, port 3000, admin environment, persistent data volume |
 | `docker/Dockerfile.*` | Ubuntu/Alpine image comparison and a small Java container example |
-| `Jenkinsfile` | Checkout, build, tests, JUnit/TAP output, container build, and status |
+| `Jenkinsfile` | GitHub push trigger, cross-platform checkout/build/tests, JUnit/TAP output, container build, and status |
 | `ansible/deploy.yml` | Install nginx and Docker, run the published image, configure the reverse proxy |
 | `docs/LAB-GUIDE.md` | Git/GitHub, Jenkins/webhook, Docker, and Ansible lab steps |
 
@@ -54,6 +56,8 @@ Open `http://localhost:3000`.
 
 ```powershell
 npm test
+Copy-Item .env.example .env
+# Edit .env and replace the placeholder with a unique local password.
 docker compose up --build -d
 Invoke-RestMethod http://localhost:3000/api/health
 docker compose ps
@@ -63,4 +67,4 @@ docker compose down
 
 The deployment statuses are a workflow demonstration; EcoDeploy does not provision cloud resources yet. Carbon profiles are illustrative seeded data, not live measurements or validated emissions. Estimated costs are informational; the demo collects no payment. Session cookies are in-memory and expire when the server restarts. Use this as a local/classroom project, not a public production service, without adding production identity/session management, rate limits, CSRF protections, HTTPS, and live grid data.
 
-The local Git repository already demonstrates feature branches and conflict resolution. GitHub creation/push, Jenkins, Docker, and Ansible require the account and services described in [the lab guide](docs/LAB-GUIDE.md).
+The local Git repository already demonstrates feature branches and conflict resolution. See [the lab guide](docs/LAB-GUIDE.md) for GitHub, Jenkins, Docker, and Ansible integration steps. This repo has no published remote yet.

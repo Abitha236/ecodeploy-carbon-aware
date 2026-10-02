@@ -84,7 +84,7 @@ Suggested team strategy: short-lived `feature/<topic>` branches, pull requests i
 
 ## 2. GitHub remote and synchronization
 
-Create an **empty** public or private GitHub repository named `ecodeploy-carbon-aware` (do not initialize it with a README/license, since this project already has a commit). Authenticate with `gh auth login`, or use the GitHub browser UI and its credential manager. Then use the exact URL GitHub displays:
+Create an **empty public** GitHub repository named `ecodeploy-carbon-aware` (do not initialize it with a README/license, since this project already has a commit). Authenticate with Git Credential Manager, GitHub CLI, or the connected GitHub integration. Then use the exact URL GitHub displays:
 
 ```powershell
 gh auth status
@@ -118,10 +118,12 @@ git status
 
 ```powershell
 npm test
+$env:ADMIN_EMAIL = 'admin@ecodeploy.local'
+$env:ADMIN_PASSWORD = Read-Host 'Choose a unique admin password (12+ characters)'
 npm start
 ```
 
-Open `http://localhost:3000`. Create a customer account, browse the catalog, add at least two workload templates to the cart, submit the requests, and inspect **My deployments**. For the admin dashboard, sign in with `admin@ecodeploy.local` and `ecodeploy-admin-change-me`; review the queue, approve a request, move it to **Scheduled**, pause a service, inspect customers, and view the activity log. These are demo credentials; set `ADMIN_EMAIL` and a new `ADMIN_PASSWORD` before sharing the app. Public registration can create customer accounts only.
+Open `http://localhost:3000`. Create a customer account, browse the catalog, add at least two workload templates to the cart, submit the requests, and inspect **My deployments**. For the admin dashboard, sign in with the `ADMIN_EMAIL` and `ADMIN_PASSWORD` set in the server environment; review the queue, approve a request, move it to **Scheduled**, pause a service, inspect customers, and view the activity log. Public registration can create customer accounts only.
 
 Public API routes include `/api/health`, `/api/intensity`, `/api/estimate`, and `/api/catalog`. Authenticated customer routes include `/api/me`, `/api/deployments`, and `/api/logout`; admin routes include `/api/admin/overview`, `/api/admin/deployments/:id`, `/api/admin/services/:id`, and `/api/admin/customers/:id`.
 
@@ -137,10 +139,15 @@ Forecast figures are seeded demonstration profiles in `app/server.js`, not live 
 With Docker Desktop running, from repo root:
 
 ```powershell
+Copy-Item .env.example .env
+# Edit .env and set a unique ADMIN_PASSWORD before using Compose.
+notepad .env
 docker pull node:24-alpine
 docker image ls
 docker build -t ecodeploy:local .
-docker run -d --name ecodeploy-demo -p 3000:3000 -v ecodeploy-data:/app/data ecodeploy:local
+$adminPassword = Read-Host 'Enter a unique admin password'
+docker run -d --name ecodeploy-demo -p 3000:3000 -e ADMIN_EMAIL=admin@ecodeploy.local -e "ADMIN_PASSWORD=$adminPassword" -v ecodeploy-data:/app/data ecodeploy:local
+Remove-Variable adminPassword
 docker ps
 Invoke-RestMethod http://localhost:3000/api/health
 docker logs ecodeploy-demo
@@ -177,13 +184,13 @@ docker volume ls
 
 ## 5. Jenkins Freestyle job, pipeline, and GitHub webhook
 
-Install Jenkins LTS using its official Windows installer or run on a Linux VM. Complete the initial unlock and install suggested plugins plus **Git**, **Pipeline**, **JUnit**, and (for webhooks) **GitHub Integration**. Install Git and Node 24 on the Jenkins agent and ensure `git`, `node`, `npm`, and Docker CLI/daemon are available to that agent. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the app's runtime environment before deploying it. For production, use a dedicated build agent and managed secrets.
+Jenkins is installed locally at `http://localhost:8080`; sign in with the account created during Jenkins setup. Install/enable **Git**, **Pipeline**, **JUnit**, and **GitHub** plugins. Ensure Git, Node 24, and the Docker CLI/daemon are available on the build agent. The Jenkinsfile uses `githubPush()` and runs on Windows or Linux agents. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the app's runtime environment before deploying it. For production, use a dedicated build agent and managed secrets.
 
 **Freestyle demonstration:** New Item → Freestyle project `EcoDeploy-Freestyle` → Source Code Management: Git → Repository URL: your GitHub URL → Branch `*/main` → Build Triggers: **GitHub hook trigger for GITScm polling** → Build step: Execute shell (`npm test`, `docker build -t ecodeploy:freestyle .`) on Linux, or Windows batch (`npm test` and `docker build -t ecodeploy:freestyle .`) on Windows. Save → Build Now → inspect Console Output and test exit code.
 
-**Pipeline:** Create a Pipeline job `EcoDeploy-Pipeline`; SCM → Git → set repo URL/branch and Script Path `Jenkinsfile`; check **GitHub hook trigger for GITScm polling**; save. The Jenkinsfile checks out, builds, runs tests into JUnit XML + TAP artifacts, builds a tagged container, and prints success/failure status. Confirm the agent has a Docker daemon; the pipeline intentionally fails at image build if it does not. Configure GitHub credentials in Jenkins Credentials if a private repository requires access. Do not place tokens in the Jenkinsfile.
+**Pipeline:** Create a Pipeline job `EcoDeploy-Pipeline`; SCM → Git → set repo URL/branch and Script Path `Jenkinsfile`; save. The Jenkinsfile checks out, syntax-checks, runs tests into JUnit XML + TAP artifacts, builds a tagged container, and prints success/failure status. Confirm the agent has a Docker daemon; the pipeline intentionally fails at image build if it does not. Configure GitHub credentials in Jenkins Credentials if required. Do not place tokens in the Jenkinsfile.
 
-**Webhook:** Jenkins must be reachable from GitHub over HTTPS. A local-only `localhost` Jenkins cannot receive GitHub webhooks; use a secured public Jenkins URL or a trusted temporary tunnel approved by your organization. In GitHub → repository Settings → Webhooks → Add webhook, set Payload URL to `https://YOUR-JENKINS/github-webhook/`, Content type `application/json`, choose **push** events, and save. For a GitHub Enterprise or private Jenkins instance, configure supported authentication/allowlists. Push a harmless README commit, then inspect webhook Recent Deliveries (expect HTTP 200) and Jenkins build history. The GitHub webhook is push notification; Jenkins plugin/trigger and a reachable URL are required. If webhook hosting is unavailable, use **Poll SCM** as a fallback and label the demo polling, not webhook-triggered.
+**Webhook:** Jenkins must be reachable from GitHub over HTTPS. The current Jenkins listens on local `localhost:8080` and cannot receive GitHub webhooks; use a secured public Jenkins URL or a trusted temporary tunnel approved by your organization. In GitHub → repository Settings → Webhooks → Add webhook, set Payload URL to `https://YOUR-JENKINS/github-webhook/`, Content type `application/json`, choose **push** events, and save. For a GitHub Enterprise or private Jenkins instance, configure supported authentication/allowlists. Push a harmless README commit, then inspect webhook Recent Deliveries (expect HTTP 200) and Jenkins build history. The GitHub webhook is push notification; Jenkins plugin/trigger and a reachable URL are required. If webhook hosting is unavailable, use **Poll SCM** as a fallback and label the demo polling, not webhook-triggered.
 
 **Report evidence:** Jenkins job config trigger, one Freestyle console result, one Pipeline stage view, passing JUnit report with test counts, archived TAP report, and a build started by a GitHub push (with delivery status).
 
@@ -207,8 +214,9 @@ cp ansible/inventory.ini.example ansible/inventory.ini
 # Edit inventory.ini: set real Ubuntu host/IP and SSH user; don't commit real host inventory.
 ansible web -i ansible/inventory.ini -m ping
 ansible-playbook -i ansible/inventory.ini ansible/deploy.yml --syntax-check
-ansible-playbook -i ansible/inventory.ini ansible/deploy.yml --syntax-check
-ansible-playbook -i ansible/inventory.ini ansible/deploy.yml --diff -e ecodeploy_image=YOUR_REGISTRY/ecodeploy:1.0.0
+ansible-vault create ansible/secrets.yml
+# Add ecodeploy_admin_password to the encrypted file.
+ansible-playbook -i ansible/inventory.ini ansible/deploy.yml --diff -e ecodeploy_image=YOUR_REGISTRY/ecodeploy:1.0.0 --ask-vault-pass --extra-vars @ansible/secrets.yml
 ansible web -i ansible/inventory.ini -b -m command -a 'docker ps'
 ```
 

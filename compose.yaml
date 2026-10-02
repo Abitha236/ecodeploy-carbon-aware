@@ -6,7 +6,7 @@ services:
     environment:
       PORT: "3000"
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ecodeploy.local}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ecodeploy-admin-change-me}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set a unique ADMIN_PASSWORD in .env before starting Compose}
     ports:
       - "3000:3000"
     volumes:

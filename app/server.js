@@ -11,7 +11,8 @@ const ROOT = path.resolve(__dirname, '..');
 const STATIC = path.join(__dirname, 'public');
 const DB_PATH = process.env.DATABASE_PATH || path.join(ROOT, 'data', 'ecodeploy.db');
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@ecodeploy.local').toLowerCase();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ecodeploy-admin-change-me';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+if (ADMIN_PASSWORD.length < 12) throw new Error('Set ADMIN_PASSWORD to a unique value of at least 12 characters before starting EcoDeploy.');
 const intensity = {
   'North America': [72,68,63,60,58,62,75,94,121,138,149,144,136,128,118,111,105,99,93,88,82,78,75,73],
   Europe: [92,88,84,80,77,79,86,95,105,111,108,102,96,91,86,82,78,75,73,77,84,96,102,97],
@@ -54,13 +55,17 @@ db.exec(`
 const sessions = new Map();
 const nowIso = () => new Date().toISOString();
 const id = prefix => `${prefix}-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+const seed = db.prepare('SELECT id,role FROM users WHERE email = ?').get(ADMIN_EMAIL);
+if (seed && seed.role !== 'admin') throw new Error('ADMIN_EMAIL belongs to a customer account; choose a different administrator email.');
 const seedSalt = crypto.randomBytes(16).toString('hex');
-const seed = db.prepare('SELECT id FROM users WHERE email = ?').get(ADMIN_EMAIL);
 if (!seed) {
   const adminId = crypto.randomUUID();
   const hash = crypto.scryptSync(ADMIN_PASSWORD, seedSalt, 64).toString('hex');
   db.prepare('INSERT INTO users(id,email,name,salt,password_hash,role,created_at) VALUES(?,?,?,?,?,?,?)')
     .run(adminId, ADMIN_EMAIL, 'EcoDeploy Admin', seedSalt, hash, 'admin', nowIso());
+} else {
+  const hash = crypto.scryptSync(ADMIN_PASSWORD, seedSalt, 64).toString('hex');
+  db.prepare('UPDATE users SET salt=?,password_hash=? WHERE id=?').run(seedSalt, hash, seed.id);
 }
 const defaultServices = [
   ['web-api','Web API','Applications','A production-ready API service with a low-carbon deployment window.',2,3,0.052],

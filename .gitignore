@@ -2,7 +2,10 @@ node_modules/
 data/store.json
 data/ecodeploy.db*
 ansible/inventory.ini
+ansible/secrets.yml
 .env
+.env.*
+!.env.example
 coverage/
 test-results/
 *.log
