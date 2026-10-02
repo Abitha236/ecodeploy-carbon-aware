@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+
+branch=$(git symbolic-ref --quiet --short HEAD) || {
+  echo "Auto-push skipped: this commit is on a detached HEAD." >&2
+  exit 0
+}
+
+if ! git remote get-url origin >/dev/null 2>&1; then
+  echo "Auto-push is enabled, but 'origin' is not configured yet; commit remains local." >&2
+  exit 0
+fi
+
+echo "Auto-pushing commit on '$branch' to origin..."
+git push --set-upstream origin "HEAD:refs/heads/$branch"
