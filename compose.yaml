@@ -3,6 +3,10 @@ services:
     build: .
     image: ecodeploy:local
     container_name: ecodeploy-web
+    environment:
+      PORT: "3000"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ecodeploy.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ecodeploy-admin-change-me}
     ports:
       - "3000:3000"
     volumes:

@@ -1,6 +1,6 @@
 # EcoDeploy experiment — execution and evidence guide
 
-This is a reproducible single-project lab with a coherent result: a user enters deployment size/runtime, sees the estimated current footprint and lowest modeled hourly window, then saves a named deployment plan. The web UI is the experiment output. The CI pipeline verifies the API, emits test reports, builds an image, and reports a build status. Container and Ansible exercises deploy the same app.
+This lab's application is a carbon-aware deployment service with separate customer and admin dashboards. Customers search a service catalog, configure deployments in a cart, submit requests, and track status. Admins review requests, manage catalog availability and customer accounts, and inspect the activity log. SQLite preserves app data; Jenkins, Docker, and Ansible provide the DevOps workflow. This adapts the sample report's customer/admin pattern to EcoDeploy's deployment domain.
 
 ## 0. Tools and machine setup
 
@@ -121,21 +121,23 @@ npm test
 npm start
 ```
 
-Open `http://localhost:3000`; show calculator inputs and the recommended hour, submit a project name, register with a throwaway password, and show the new queue row. In another PowerShell window:
+Open `http://localhost:3000`. Create a customer account, browse the catalog, add at least two workload templates to the cart, submit the requests, and inspect **My deployments**. For the admin dashboard, sign in with `admin@ecodeploy.local` and `ecodeploy-admin-change-me`; review the queue, approve a request, move it to **Scheduled**, pause a service, inspect customers, and view the activity log. These are demo credentials; set `ADMIN_EMAIL` and a new `ADMIN_PASSWORD` before sharing the app. Public registration can create customer accounts only.
+
+Public API routes include `/api/health`, `/api/intensity`, `/api/estimate`, and `/api/catalog`. Authenticated customer routes include `/api/me`, `/api/deployments`, and `/api/logout`; admin routes include `/api/admin/overview`, `/api/admin/deployments/:id`, `/api/admin/services/:id`, and `/api/admin/customers/:id`.
 
 ```powershell
 Invoke-RestMethod http://localhost:3000/api/health
 Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/estimate -ContentType 'application/json' -Body '{"region":"Europe","workload":30,"runtime":2}'
 ```
 
-Forecast figures are seeded demonstration profiles in `app/server.js`. Say so in the report; do not claim live emissions or validated carbon savings.
+Forecast figures are seeded demonstration profiles in `app/server.js`, not live emissions or validated carbon savings.
 
 ## 4. Docker images and lifecycle
 
 With Docker Desktop running, from repo root:
 
 ```powershell
-docker pull node:22-alpine
+docker pull node:24-alpine
 docker image ls
 docker build -t ecodeploy:local .
 docker run -d --name ecodeploy-demo -p 3000:3000 -v ecodeploy-data:/app/data ecodeploy:local
@@ -175,7 +177,7 @@ docker volume ls
 
 ## 5. Jenkins Freestyle job, pipeline, and GitHub webhook
 
-Install Jenkins LTS using its official Windows installer or run on a Linux VM. Complete the initial unlock and install suggested plugins plus **Git**, **Pipeline**, **JUnit**, and (for webhooks) **GitHub Integration**. Install Git and Node on the Jenkins agent and ensure `git`, `node`, `npm`, and Docker CLI/daemon are available to that agent. For production, use a dedicated build agent and managed secrets.
+Install Jenkins LTS using its official Windows installer or run on a Linux VM. Complete the initial unlock and install suggested plugins plus **Git**, **Pipeline**, **JUnit**, and (for webhooks) **GitHub Integration**. Install Git and Node 24 on the Jenkins agent and ensure `git`, `node`, `npm`, and Docker CLI/daemon are available to that agent. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the app's runtime environment before deploying it. For production, use a dedicated build agent and managed secrets.
 
 **Freestyle demonstration:** New Item → Freestyle project `EcoDeploy-Freestyle` → Source Code Management: Git → Repository URL: your GitHub URL → Branch `*/main` → Build Triggers: **GitHub hook trigger for GITScm polling** → Build step: Execute shell (`npm test`, `docker build -t ecodeploy:freestyle .`) on Linux, or Windows batch (`npm test` and `docker build -t ecodeploy:freestyle .`) on Windows. Save → Build Now → inspect Console Output and test exit code.
 
@@ -191,7 +193,7 @@ Install Jenkins LTS using its official Windows installer or run on a Linux VM. C
 npm test
 ```
 
-Five tests cover health response, clamped estimates, unknown-region defaults, hourly recommendation API, and malformed JSON. A non-zero test exit fails Jenkins. Pipeline JUnit publishing makes pass/fail and individual durations visible; archived TAP is the raw report. Capture the Jenkins test-results page. If tests fail, inspect the first assertion/stack trace, fix the code, rerun locally, commit, and confirm the new build is green.
+Twelve tests cover health/storage, estimates, catalog search/category, customer registration and password hashing, deployment requests, history, role access, admin workflow transitions, service/customer management, and failed login. A non-zero test exit fails Jenkins. Pipeline JUnit publishing shows pass/fail and durations; archived TAP is the raw output. If tests fail, inspect the first assertion/stack trace, fix the code, rerun locally, commit, and confirm the new build is green.
 
 ## 7. Ansible web server and automated Docker management
 
@@ -212,7 +214,7 @@ ansible web -i ansible/inventory.ini -b -m command -a 'docker ps'
 
 After the playbook, visit `http://YOUR_UBUNTU_SERVER_IP/` and inspect `docker ps`, `systemctl status nginx`, and the Ansible recap. The playbook changes a real target host. Use a disposable VM for this lab and update SSH/firewall rules to your requirements. Configure authenticated registry access on the host first if the registry is private.
 
-## 8. Screenshots and report evidence
+## 8. Screenshot capture checklist
 
 Save real screenshots in `screenshots/` at 1920×1080 or higher when available. Capture the **PowerShell or Ubuntu terminal window itself** (for commands), browser app window (for the website), Jenkins (for jobs/reports), and Docker Desktop (for containers/images). Do not use screenshots of Codex/assistant. Keep text readable; capture after output completes and include enough window title/context to identify the app.
 
@@ -224,18 +226,24 @@ Suggested sequence (rename files in order):
 4. `04-conflict-resolution.png` — conflict markers, resolved status, merge commit.
 5. `05-github-remote-push.png` — remote -v, push success, clean status.
 6. `06-fetch-vs-pull.png` — before/after refs and commands.
-7. `07-app-planner.png` — planner result + recommendation in browser.
-8. `08-app-registration-queue.png` — demo registration and saved project row (never show a real password).
-9. `09-tests-junit.png` — test command and Jenkins JUnit test results.
-10. `10-freestyle-build.png` — Jenkins Freestyle console build.
-11. `11-pipeline-webhook.png` — Jenkins pipeline result and successful GitHub delivery.
-12. `12-docker-lifecycle.png` — image list, running container, health endpoint, stop/start/remove.
-13. `13-docker-size-comparison.png` — Ubuntu/Alpine/Java `docker images` output.
-14. `14-ansible-run.png` — play recap and `docker ps` on the target.
-15. `15-deployed-site.png` — deployed site in a browser.
+7. `07-customer-dashboard.png` — customer overview and request summary.
+8. `08-service-catalog-cart.png` — catalog filters and configured multi-service cart.
+9. `09-customer-deployments.png` — request IDs, estimates, recommended times, and statuses.
+10. `10-admin-overview.png` — separate admin dashboard and queue metrics.
+11. `11-admin-request-management.png` — request review, status update, and customer note.
+12. `12-admin-catalog-customers.png` — service availability and customer access.
+13. `13-carbon-planner.png` — modeled estimate and recommended hour.
+14. `14-sqlite-volume.png` — persistent app database / Docker volume.
+15. `15-jenkins-tests.png` — passing test count and build status.
+16. `16-freestyle-build.png` — Jenkins Freestyle console build.
+17. `17-pipeline-webhook.png` — Jenkins pipeline result and successful GitHub delivery.
+18. `18-docker-lifecycle.png` — image list, running container, health endpoint, stop/start/remove.
+19. `19-docker-size-comparison.png` — Ubuntu/Alpine/Java `docker images` output.
+20. `20-ansible-run.png` — play recap and `docker ps` on the target.
+21. `21-deployed-site.png` — deployed customer-facing page in a browser.
 
-Use Windows Snipping Tool (`Win+Shift+S`) or the OS screenshot utility, save PNG directly into `screenshots/`, and verify text is legible. For a formal report, include the experiment objective, architecture, implementation, command observations, screenshots, test table, image-size values observed, limitations, and conclusion. The screenshot folder includes a manifest so captures are easy to cross-check.
+Use Windows Snipping Tool (`Win+Shift+S`) or the OS screenshot utility, save PNG directly into `screenshots/`, and verify text is legible. Capture customer and admin browser views separately; never include an account password. The screenshot folder includes a manifest so captures are easy to cross-check.
 
 ## Expected outcome
 
-The planner returns a current estimate plus the modeled cleanest hour, and a plan appears in the queue. Automated checks pass locally and in Jenkins; an image can be started on port 3000 and its health endpoint returns `{"status":"ok"...}`. Ansible recap reports changed/successful tasks and nginx serves the app through the container. Real GitHub push, live webhook, Jenkins host, Docker daemon, Ubuntu target, and screenshot files require the local accounts/hosts described above.
+Customers can submit multiple deployment requests and track admin status changes; admins can manage the queue, catalog, and account access. SQLite records persist in `/app/data` through the Docker volume. Automated checks pass locally and in Jenkins; the app health endpoint returns OK. Ansible recap should show successful tasks and nginx should serve the app through the container. GitHub push, live webhook, Jenkins host, Docker daemon, Ubuntu target, and terminal screenshots still require the local accounts/hosts described above. EcoDeploy models the workflow but does not provision real cloud workloads yet.

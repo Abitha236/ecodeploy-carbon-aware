@@ -1,38 +1,56 @@
-# EcoDeploy — carbon-aware software deployment
+# EcoDeploy — carbon-aware deployment workspace
 
-EcoDeploy is a small but complete web application and DevOps lab. It estimates deployment emissions from **illustrative** hourly regional grid data, recommends a lower-intensity hour, and stores local project plans. The repo includes a Node.js API, responsive dashboard, automated tests, Docker images, a Jenkins pipeline, and an Ansible playbook that installs a web server and manages the app container.
+EcoDeploy has separate **customer** and **admin** dashboards for managing carbon-aware software deployment requests. The attached sample is a Digital Canteen project; EcoDeploy keeps the user's original deployment-planning topic and adapts the sample's customer/admin workflows to that topic.
 
-> **Model limitation:** Forecast values are demonstration data, not live grid readings or a verified emissions inventory. Replace `intensity` in `app/server.js` with an authoritative, timestamped grid-intensity API before making production decisions. User accounts and plans are stored on the server filesystem; do not expose this demo to the public internet without adding a real database, session-based authentication, TLS, CSRF protection, rate limiting, and secret management.
+Customers search a categorized service catalog, configure region/compute/runtime, build a deployment cart, submit requests, and track statuses and administrator notes. Admins review/approve/reject requests, move them through deployment status, manage customer access, manage service availability, add service templates, and inspect an audit trail. The app stores accounts, requests, catalog data, and audit events in SQLite.
 
-## Run the project
+## Run locally
 
-Requires Node.js 20+ (tested with Node 24) and Git. No third-party Node packages are required.
+Requires Node.js 24+ and Git. The runtime uses Node's built-in SQLite module and has no third-party npm dependencies.
 
 ```powershell
-cd outputs\ecodeploy-carbon-aware
 node --version
 npm --version
-git --version
 npm test
 npm start
 ```
 
-Visit `http://localhost:3000`. Try the calculator, save a service plan, and create an account using a throwaway password. The API is available at `/api/health`, `/api/intensity`, `/api/estimate`, `/api/plans`, `/api/plan`, and `/api/register`.
+Open `http://localhost:3000`.
 
-## Project structure
+**Demo administrator:** `admin@ecodeploy.local` / `ecodeploy-admin-change-me`. This is a classroom default; set `ADMIN_EMAIL` and a strong `ADMIN_PASSWORD` before sharing or deploying the app. New registrations always get the customer role; the public form cannot create admins.
+
+## Workflows
+
+### Customer
+
+1. Create an account or sign in.
+2. Browse and search service templates by category.
+3. Configure a region, vCPU count, and runtime; add one or more services to the cart.
+4. Submit the cart. The app stores each request, a modeled footprint, and the recommended UTC hour.
+5. Track status and administrator notes; cancel requests that are still pending or scheduled.
+
+### Admin
+
+1. Sign in with the configured admin account.
+2. Review the overview and pending deployment queue.
+3. Move valid requests through **Requested → Approved → Scheduled → Deploying → Completed**. Reject, cancel, or mark failed when appropriate; invalid status jumps are refused.
+4. Pause/reactivate catalog entries, add service templates, suspend/reactivate customer access, and review the audit log.
+
+## Implementation
 
 | Path | Purpose |
 |---|---|
-| `app/server.js` | Dependency-free HTTP API, static server, carbon estimate, account registration/sign-in, and plan store |
-| `app/public/` | Responsive dashboard, chart, forms, and styles |
-| `tests/app.test.js` | Health, estimate bounds, recommendations, and invalid input tests |
-| `Dockerfile`, `compose.yaml` | Non-root Node app, health check, port 3000, persistent data volume |
-| `docker/Dockerfile.*` | Ubuntu and Alpine OS comparison plus Java runtime example |
-| `Jenkinsfile` | Checkout, build, continuous tests, JUnit/TAP reports, Docker image build, status |
-| `ansible/deploy.yml` | Install nginx + Docker, pull/run container, configure reverse proxy |
-| `docs/LAB-GUIDE.md` | End-to-end experiment commands and GitHub/Jenkins setup |
+| `app/server.js` | HTTP API, role checks, password hashing, sessions, SQLite schema/migration, carbon estimate, and state transitions |
+| `app/public/` | Responsive marketing page, customer dashboard, admin console, catalog, cart, planner, and styles |
+| `data/ecodeploy.db` | SQLite data: users, services, deployments, and audit events |
+| `tests/app.test.js` | 12 tests covering catalog, accounts, roles, deployment requests, admin transitions, and access control |
+| `Dockerfile`, `compose.yaml` | Non-root Node 24 image, health check, port 3000, admin environment, persistent data volume |
+| `docker/Dockerfile.*` | Ubuntu/Alpine image comparison and a small Java container example |
+| `Jenkinsfile` | Checkout, build, tests, JUnit/TAP output, container build, and status |
+| `ansible/deploy.yml` | Install nginx and Docker, run the published image, configure the reverse proxy |
+| `docs/LAB-GUIDE.md` | Git/GitHub, Jenkins/webhook, Docker, and Ansible lab steps |
 
-## Fast local checks
+## Local verification
 
 ```powershell
 npm test
@@ -43,6 +61,6 @@ docker compose logs --tail 30 ecodeploy
 docker compose down
 ```
 
-The project and all tutorial files are ready locally. Creating a GitHub repo, pushing to it, configuring webhooks, and running the Docker/Ansible infrastructure need your GitHub sign-in and installed services. Follow [the lab guide](docs/LAB-GUIDE.md) in order. The screenshot folder has a capture checklist; this environment does not currently provide a terminal window or screen-capture-to-file path, so the guide shows exactly which real PowerShell/Ubuntu terminal captures to add when you run the labs.
+The deployment statuses are a workflow demonstration; EcoDeploy does not provision cloud resources yet. Carbon profiles are illustrative seeded data, not live measurements or validated emissions. Estimated costs are informational; the demo collects no payment. Session cookies are in-memory and expire when the server restarts. Use this as a local/classroom project, not a public production service, without adding production identity/session management, rate limits, CSRF protections, HTTPS, and live grid data.
 
-Branch demo: concise feature branches keep reviews focused.
+The local Git repository already demonstrates feature branches and conflict resolution. GitHub creation/push, Jenkins, Docker, and Ansible require the account and services described in [the lab guide](docs/LAB-GUIDE.md).

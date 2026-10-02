@@ -3,5 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "description": "Carbon-aware deployment planner and DevOps teaching project",
+  "engines": { "node": ">=24" },
   "scripts": { "start": "node app/server.js", "test": "node --test --test-reporter=tap tests/*.test.js" }
 }

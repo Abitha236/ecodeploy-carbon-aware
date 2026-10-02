@@ -1,5 +1,7 @@
 node_modules/
 data/store.json
+data/ecodeploy.db*
+ansible/inventory.ini
 .env
 coverage/
 test-results/
