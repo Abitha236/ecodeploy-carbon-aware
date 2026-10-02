@@ -212,10 +212,10 @@ const server = http.createServer(async (req,res) => {
     if(req.method==='GET'){
       const rel=url.pathname==='/'?'index.html':decodeURIComponent(url.pathname).replace(/^\/+/, '');const file=path.resolve(STATIC,rel);
       if(!file.startsWith(STATIC+path.sep)&&file!==path.join(STATIC,'index.html'))return send(res,403,{error:'Forbidden'});
-      try{const ext=path.extname(file);const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml'};res.writeHead(200,{'content-type':types[ext]||'application/octet-stream','x-content-type-options':'nosniff'});return res.end(fs.readFileSync(file));}catch{return send(res,404,{error:'Not found'});}
+      try{const body=fs.readFileSync(file);const ext=path.extname(file);const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml'};res.writeHead(200,{'content-type':types[ext]||'application/octet-stream','x-content-type-options':'nosniff'});return res.end(body);}catch{return send(res,404,{error:'Not found'});}
     }
     return send(res,404,{error:'Not found'});
-  } catch(error) { return send(res,400,{error:error.message||'Request failed.'}); }
+  } catch(error) { if(res.headersSent){res.destroy();return;} return send(res,400,{error:error.message||'Request failed.'}); }
 });
 
 if(require.main===module)server.listen(PORT,'0.0.0.0',()=>console.log(`EcoDeploy listening on http://0.0.0.0:${PORT}; SQLite: ${DB_PATH}`));
