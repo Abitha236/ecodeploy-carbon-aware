@@ -112,6 +112,8 @@ git log --oneline --graph --decorate --all -12
 git status
 ```
 
+Automatic push is enabled locally by `.githooks/post-commit`. After the initial remote push, every new commit on the current branch runs `git push --set-upstream origin <branch>`. For another clone, run `powershell -ExecutionPolicy Bypass -File .\scripts\enable-auto-push.ps1` after authenticating. Never commit secrets or personal data to this public repository.
+
 **Fetch** downloads remote refs/objects and updates `origin/main`; your current branch/worktree stay put until you inspect and merge/rebase. Example: run `git fetch origin`, then `git log main..origin/main` to review incoming commits before applying them. **Pull** is fetch plus integration (normally merge; `--ff-only` above refuses surprise merge commits). Example: `git pull --ff-only origin main` downloads and advances local `main` if it can fast-forward. If local and remote both diverged, stop and choose/review an explicit merge or rebase rather than blindly pulling. `git status -sb` reports ahead/behind state after either operation.
 
 ## 3. Run and demonstrate the website

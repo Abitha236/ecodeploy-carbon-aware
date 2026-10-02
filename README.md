@@ -68,3 +68,7 @@ docker compose down
 The deployment statuses are a workflow demonstration; EcoDeploy does not provision cloud resources yet. Carbon profiles are illustrative seeded data, not live measurements or validated emissions. Estimated costs are informational; the demo collects no payment. Session cookies are in-memory and expire when the server restarts. Use this as a local/classroom project, not a public production service, without adding production identity/session management, rate limits, CSRF protections, HTTPS, and live grid data.
 
 The local Git repository already demonstrates feature branches and conflict resolution. See [the lab guide](docs/LAB-GUIDE.md) for GitHub, Jenkins, Docker, and Ansible integration steps. This repo has no published remote yet.
+
+## Automatic GitHub push
+
+After `origin` is configured and the initial `main` branch has been pushed, the installed `.githooks/post-commit` hook pushes every committed branch to `origin` automatically. On a fresh clone, enable it with `powershell -ExecutionPolicy Bypass -File .\scripts\enable-auto-push.ps1`. Git Credential Manager must be authenticated first. This repository is intended to be public: never commit `.env`, database files, credentials, tokens, private keys, or other private material.
