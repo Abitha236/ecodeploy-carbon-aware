@@ -1,6 +1,6 @@
 # EcoDeploy — carbon-aware deployment workspace
 
-EcoDeploy has separate **customer** and **admin** dashboards for managing carbon-aware software deployment requests. The attached sample is a Digital Canteen project; EcoDeploy keeps the user's original deployment-planning topic and adapts the sample's customer/admin workflows to that topic.
+EcoDeploy has separate **customer** and **admin** dashboards for managing carbon-aware software deployment requests. EcoDeploy keeps the user's original deployment-planning topic and adapts the sample's customer/admin workflows to that topic.
 
 Customers search a categorized service catalog, configure region/compute/runtime, build a deployment cart, submit requests, and track statuses and administrator notes. Admins review/approve/reject requests, move them through deployment status, manage customer access, manage service availability, add service templates, and inspect an audit trail. The app stores accounts, requests, catalog data, and audit events in SQLite.
 
